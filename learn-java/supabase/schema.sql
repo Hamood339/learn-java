@@ -92,11 +92,19 @@ drop policy if exists "quizzes_own" on public.quizzes;
 create policy "quizzes_own" on public.quizzes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Bibliothèque : lecture pour tout utilisateur connecté ; l'écriture se fait uniquement
--- via ce script (seed ci-dessous), pas depuis l'app.
+-- Bibliothèque : lecture et écriture pour les utilisateurs connectés.
 drop policy if exists "phase_reference_read" on public.phase_reference;
 create policy "phase_reference_read" on public.phase_reference
-  for select using (auth.role() = 'authenticated');
+  for select to authenticated using (true);
+
+drop policy if exists "phase_reference_write" on public.phase_reference;
+create policy "phase_reference_write" on public.phase_reference
+  for insert to authenticated with check (true);
+
+drop policy if exists "phase_reference_update" on public.phase_reference;
+create policy "phase_reference_update" on public.phase_reference
+  for update to authenticated using (true)
+  with check (true);
 
 -- ================= Contenu de la bibliothèque (24 phases) =================
 -- Sûr à relancer : met à jour le contenu si la phase existe déjà (on conflict).

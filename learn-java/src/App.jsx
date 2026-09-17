@@ -54,7 +54,15 @@ export default function App() {
   if (loading) return <div style={{ padding: 40 }}>Chargement…</div>;
   if (!user) return <Login />;
 
-  const viewProps = { settings, refreshSettings, setView, toast };
+  const viewProps = {
+    settings,
+    refreshSettings,
+    onSettingsChange: refreshSettings,
+    setView,
+    toast,
+    showToast: toast,
+    onSaved: refreshSettings,
+  };
 
   return (
     <div className="app">

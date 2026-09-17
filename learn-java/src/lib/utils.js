@@ -29,8 +29,22 @@ export function mdLite(text) {
   const lines = (text || "").split("\n");
   let html = "";
   let inList = false;
+  let inCode = false;
+  let code = [];
   for (const raw of lines) {
     const line = raw.trim();
+    if (line.startsWith("```")) {
+      if (inCode) {
+        html += `<pre class="code-block"><code>${escapeHtml(code.join("\n"))}</code></pre>`;
+        code = [];
+        inCode = false;
+      } else {
+        if (inList) { html += "</ul>"; inList = false; }
+        inCode = true;
+      }
+      continue;
+    }
+    if (inCode) { code.push(raw); continue; }
     if (line.startsWith("## ")) {
       if (inList) { html += "</ul>"; inList = false; }
       html += `<h3 style="font-size:14.5px;margin:14px 0 6px">${escapeHtml(line.slice(3))}</h3>`;
@@ -44,6 +58,7 @@ export function mdLite(text) {
       html += `<p style="margin:4px 0">${escapeHtml(line)}</p>`;
     }
   }
+  if (inCode) html += `<pre class="code-block"><code>${escapeHtml(code.join("\n"))}</code></pre>`;
   if (inList) html += "</ul>";
   return html;
 }

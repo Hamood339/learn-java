@@ -26,7 +26,7 @@ export default function Sidebar({ view, setView, settings }) {
       {/* Barre visible uniquement sur mobile */}
       <div className="rail-mobile-bar">
         <div className="rail-brand">
-          <img className="brand-logo" src="/java-logo.webp" alt="Learn-Java" />
+          <img className="brand-logo" src="/java%20logo.webp" alt="Learn-Java" />
           <span className="name">Learn-Java</span>
         </div>
         <button
@@ -43,7 +43,7 @@ export default function Sidebar({ view, setView, settings }) {
 
       <aside className={"rail" + (open ? " mobile-open" : "")}>
         <div className="rail-brand">
-          <img className="brand-logo" src="/java-logo.webp" alt="Learn-Java" />
+          <img className="brand-logo" src="/java%20logo.webp" alt="Learn-Java" />
           <span className="name">Learn-Java</span>
         </div>
         <div className="rail-status">{statusLabel}</div>

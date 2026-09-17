@@ -18,9 +18,15 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--paper)", padding: 16 }}>
-      <form onSubmit={handleSubmit} className="card" style={{ width: "min(340px, 100%)" }}>
-        <h2 className="section-title">Learn-Java — connexion</h2>
+    <div className="login-shell">
+      <div className="login-orbit" aria-hidden="true" />
+      <form onSubmit={handleSubmit} className="card login-card">
+        <div className="login-brand">
+          <img src="/java%20logo.webp" alt="Logo Learn-Java" />
+          <span>LEARN-JAVA</span>
+        </div>
+        <h1>Prêt à progresser ?</h1>
+        <p className="login-intro">Retrouve ton parcours Java et continue ta session là où tu l’as laissée.</p>
         <div className="stack">
           <label className="field">
             Email
