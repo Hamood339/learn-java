@@ -1,29 +1,38 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { PHASES } from '../lib/phases'
+import Pagination from './Pagination'
 
-export default function Projets({ settings, showToast }) {
+const PAGE_SIZE = 10
+
+export default function Projets({ settings, user, showToast }) {
   const [list, setList] = useState([])
   const [titre, setTitre] = useState('')
   const [lien, setLien] = useState('')
   const [phaseId, setPhaseId] = useState(settings?.current_phase_id ?? 0)
   const [description, setDescription] = useState('')
+  const [page, setPage] = useState(0)
+  const [hasNext, setHasNext] = useState(false)
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from('projects').select('*').order('date_ajout', { ascending: false }).limit(300)
-    if (!error) setList(data || [])
-  }, [])
+    const { data, error } = await supabase.from('projects').select('*').eq('user_id', user.id).order('date_ajout', { ascending: false }).order('id', { ascending: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+    if (!error) {
+      setHasNext((data || []).length > PAGE_SIZE)
+      setList((data || []).slice(0, PAGE_SIZE))
+    }
+  }, [page, user.id])
 
   useEffect(() => { load() }, [load])
 
   async function add() {
     if (!titre.trim() || !lien.trim()) { showToast('Titre et lien requis'); return }
     const { error } = await supabase.from('projects').insert({
-      titre, lien, phase_id: Number(phaseId), description, date_ajout: new Date().toISOString(),
+      user_id: user.id, titre, lien, phase_id: Number(phaseId), description, date_ajout: new Date().toISOString(),
     })
     if (error) { showToast('Erreur : ' + error.message); return }
     setTitre(''); setLien(''); setDescription('')
     showToast('Projet ajouté')
+    setPage(0)
     load()
   }
 
@@ -74,6 +83,7 @@ export default function Projets({ settings, showToast }) {
             </div>
           ))
         )}
+        <Pagination page={page} hasNext={hasNext} onPrevious={() => setPage((current) => Math.max(0, current - 1))} onNext={() => setPage((current) => current + 1)} label="projets" />
       </div>
     </section>
   )

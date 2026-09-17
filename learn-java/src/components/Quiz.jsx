@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { PHASES, phaseTitle } from '../lib/phases'
+import Pagination from './Pagination'
+
+const HISTORY_PAGE_SIZE = 10
 
 export default function Quiz({ settings, showToast }) {
   const [phaseId, setPhaseId] = useState(settings?.current_phase_id ?? 0)
@@ -11,6 +14,7 @@ export default function Quiz({ settings, showToast }) {
   const [qCorrect, setQCorrect] = useState(1)
   const [qExplain, setQExplain] = useState('')
   const [runner, setRunner] = useState(null) // { answers: {idx: choiceIdx}, finished, score }
+  const [historyPage, setHistoryPage] = useState(0)
 
   useEffect(() => {
     if (settings) setPhaseId(settings.current_phase_id)
@@ -21,6 +25,7 @@ export default function Quiz({ settings, showToast }) {
     if (error) { console.error(error); return }
     setQuiz(data ? { questions: data.questions || [], history: data.history || [] } : { questions: [], history: [] })
     setRunner(null)
+    setHistoryPage(0)
   }, [])
 
   useEffect(() => { load(phaseId) }, [phaseId, load])
@@ -45,6 +50,9 @@ export default function Quiz({ settings, showToast }) {
   function startQuiz() {
     setRunner({ answers: {}, finished: false, score: 0 })
   }
+
+  const historyEntries = quiz.history.slice().reverse()
+  const visibleHistory = historyEntries.slice(historyPage * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE + HISTORY_PAGE_SIZE)
 
   function answer(qIdx, cIdx) {
     if (!runner || runner.answers[qIdx] !== undefined) return
@@ -123,13 +131,20 @@ export default function Quiz({ settings, showToast }) {
         {!quiz.history.length ? (
           <p className="muted">Aucun quiz passé pour cette phase.</p>
         ) : (
-          quiz.history.slice().reverse().map((h, i) => (
+          visibleHistory.map((h, i) => (
             <div className="history-row" key={i}>
               <span>{new Date(h.date).toLocaleDateString('fr-FR')}</span>
               <span>{h.score}/{h.total}</span>
             </div>
           ))
         )}
+        <Pagination
+          page={historyPage}
+          hasNext={(historyPage + 1) * HISTORY_PAGE_SIZE < historyEntries.length}
+          onPrevious={() => setHistoryPage((current) => Math.max(0, current - 1))}
+          onNext={() => setHistoryPage((current) => current + 1)}
+          label="scores"
+        />
       </div>
 
       {runner && (

@@ -3,23 +3,33 @@ import { supabase } from '../lib/supabase'
 import { PHASES, phaseTitle } from '../lib/phases'
 import { todayISO } from '../lib/helpers'
 import MarkdownLite from './MarkdownLite'
+import Pagination from './Pagination'
 
-export default function Cours({ settings, showToast }) {
+const PAGE_SIZE = 10
+
+export default function Cours({ settings, user, showToast }) {
   const [list, setList] = useState([])
   const [date, setDate] = useState(todayISO())
   const [phaseId, setPhaseId] = useState(settings?.current_phase_id ?? 0)
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
+  const [page, setPage] = useState(0)
+  const [hasNext, setHasNext] = useState(false)
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('days')
-      .select('*')
+      .select('id, date, phase_id, cours_contenu')
+      .eq('user_id', user.id)
       .neq('cours_contenu', '')
       .order('date', { ascending: false })
-      .limit(200)
-    if (!error) setList(data || [])
-  }, [])
+      .order('id', { ascending: false })
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+    if (!error) {
+      setHasNext((data || []).length > PAGE_SIZE)
+      setList((data || []).slice(0, PAGE_SIZE))
+    }
+  }, [page, user.id])
 
   useEffect(() => { load() }, [load])
 
@@ -27,16 +37,18 @@ export default function Cours({ settings, showToast }) {
     if (!content.trim()) { showToast('Contenu vide'); return }
     setSaving(true)
     const { error } = await supabase.from('days').upsert({
+      user_id: user.id,
       date,
       phase_id: Number(phaseId),
       day_in_program: settings?.day_in_program ?? 1,
       cours_contenu: content,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'date', ignoreDuplicates: false })
+    }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     setSaving(false)
     if (error) { showToast('Erreur : ' + error.message); return }
     showToast('Enregistré')
     setContent('')
+    setPage(0)
     load()
   }
 
@@ -78,7 +90,7 @@ export default function Cours({ settings, showToast }) {
           <p className="empty-note">Aucun cours archivé pour l'instant.</p>
         ) : (
           list.map((n) => (
-            <div className="note-entry" key={n.date}>
+            <div className="note-entry" key={n.id}>
               <div className="meta">
                 <span className="d">{n.date}</span>
                 <span className="p">Phase {n.phase_id} — {phaseTitle(n.phase_id)}</span>
@@ -87,6 +99,7 @@ export default function Cours({ settings, showToast }) {
             </div>
           ))
         )}
+        <Pagination page={page} hasNext={hasNext} onPrevious={() => setPage((current) => Math.max(0, current - 1))} onNext={() => setPage((current) => current + 1)} label="cours" />
       </div>
     </section>
   )
