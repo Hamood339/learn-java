@@ -56,6 +56,7 @@ export default function App() {
 
   const viewProps = {
     settings,
+    user,
     refreshSettings,
     onSettingsChange: refreshSettings,
     setView,

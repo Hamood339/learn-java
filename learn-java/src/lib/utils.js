@@ -24,6 +24,13 @@ export function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function codeEditorHtml(source, language = "java") {
+  const lines = source.split("\n").map((line, index) =>
+    `<span class="code-line"><i>${index + 1}</i><b>${escapeHtml(line) || " "}</b></span>`
+  ).join("");
+  return `<div class="code-editor"><div class="code-toolbar"><span class="code-dots"><i></i><i></i><i></i></span><span>${language}</span></div><code>${lines}</code></div>`;
+}
+
 /** Mini-formateur markdown : ## titres, - listes, reste en paragraphes. */
 export function mdLite(text) {
   const lines = (text || "").split("\n");
@@ -35,7 +42,7 @@ export function mdLite(text) {
     const line = raw.trim();
     if (line.startsWith("```")) {
       if (inCode) {
-        html += `<pre class="code-block"><code>${escapeHtml(code.join("\n"))}</code></pre>`;
+        html += codeEditorHtml(code.join("\n"));
         code = [];
         inCode = false;
       } else {
@@ -58,7 +65,7 @@ export function mdLite(text) {
       html += `<p style="margin:4px 0">${escapeHtml(line)}</p>`;
     }
   }
-  if (inCode) html += `<pre class="code-block"><code>${escapeHtml(code.join("\n"))}</code></pre>`;
+  if (inCode) html += codeEditorHtml(code.join("\n"));
   if (inList) html += "</ul>";
   return html;
 }

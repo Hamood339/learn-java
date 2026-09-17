@@ -507,6 +507,24 @@ textarea { resize: vertical; font-family: var(--font-body); line-height: 1.6; }
 .library-textarea { min-height: 260px; font-family: var(--font-mono); font-size: 13px; line-height: 1.65; background: rgba(255, 255, 255, 0.9); }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
 .editor-hint { color: var(--ink-faint); font: 11px var(--font-mono); }
+.daily-notion { padding: 18px; border-radius: 14px; background: linear-gradient(135deg, var(--gold-soft), var(--coral-soft)); border: 1px solid rgba(226, 170, 77, .35); }
+.daily-kicker { display: block; margin-bottom: 8px; color: var(--coral); font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
+.daily-notion strong { display: block; color: var(--green-900); font-size: 19px; }
+.daily-notion p { margin: 7px 0 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+.notion-detail, .notion-result { display: grid; gap: 3px; margin-top: 16px; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+.notion-detail b, .notion-result b { color: var(--green-800); font-size: 12px; }
+.code-editor { overflow: hidden; margin: 16px 0 0; border: 1px solid rgba(16, 32, 26, .35); border-radius: 12px; background: #10251f; color: #e6f7ec; box-shadow: 0 10px 24px rgba(13, 58, 44, .14); }
+.code-toolbar { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 13px; border-bottom: 1px solid rgba(255, 255, 255, .09); background: linear-gradient(90deg, #173b30, #1d4939); color: rgba(230, 247, 236, .7); font: 10px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.code-dots { display: flex; gap: 5px; }
+.code-dots i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #e8795f; }
+.code-dots i:nth-child(2) { background: #e2aa4d; }
+.code-dots i:nth-child(3) { background: #7fd2a5; }
+.code-editor > code { display: block; overflow-x: auto; padding: 12px 0; font: 12px/1.7 var(--font-mono); white-space: pre; }
+.code-line { display: flex; min-width: max-content; padding-right: 18px; }
+.code-line > i { width: 38px; flex-shrink: 0; padding-right: 10px; color: rgba(230, 247, 236, .32); font-style: normal; text-align: right; user-select: none; }
+.code-line > b { font-weight: 500; }
+.notion-code { margin-top: 16px; }
+.notion-result { padding-top: 12px; border-top: 1px solid rgba(226, 170, 77, .35); }
 .code-block { margin: 14px 0; overflow-x: auto; padding: 16px 18px; border: 1px solid rgba(127, 210, 165, 0.25); border-radius: 12px; background: linear-gradient(135deg, #102d24, #173f32); color: #e3f7ea; font: 13px/1.7 var(--font-mono); white-space: pre; }
 
 /* ================= Toast ================= */
