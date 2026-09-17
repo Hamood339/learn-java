@@ -3,11 +3,12 @@ import { useAuth } from "../context/AuthContext";
 
 const ITEMS = [
   { view: "dashboard", glyph: "01", label: "Tableau de bord" },
-  { view: "cours", glyph: "02", label: "Cours archivés" },
-  { view: "notes", glyph: "03", label: "Notes personnelles" },
-  { view: "projets", glyph: "04", label: "Projets" },
-  { view: "quiz", glyph: "05", label: "Quiz" },
-  { view: "reglages", glyph: "06", label: "Réglages" },
+  { view: "bibliotheque", glyph: "02", label: "Bibliothèque" },
+  { view: "cours", glyph: "03", label: "Cours archivés" },
+  { view: "notes", glyph: "04", label: "Notes personnelles" },
+  { view: "projets", glyph: "05", label: "Projets" },
+  { view: "quiz", glyph: "06", label: "Quiz" },
+  { view: "reglages", glyph: "07", label: "Réglages" },
 ];
 
 export default function Sidebar({ view, setView, settings }) {

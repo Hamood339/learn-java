@@ -1,108 +1,74 @@
-import { useEffect, useState, useCallback } from 'react'
-import { supabase } from './lib/supabase'
-import { PHASES } from './lib/phases'
-import { todayISO, fmtDateLong } from './lib/helpers'
-import Dashboard from './components/Dashboard'
-import Cours from './components/Cours'
-import Notes from './components/Notes'
-import Projets from './components/Projets'
-import Quiz from './components/Quiz'
-import Reglages from './components/Reglages'
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "./context/AuthContext";
+import { supabase } from "./supabaseClient";
+import Login from "./components/Login";
+import Sidebar from "./components/Sidebar";
+import Dashboard from "./components/Dashboard";
+import Bibliotheque from "./components/Bibliotheque";
+import Cours from "./components/Cours";
+import Notes from "./components/Notes";
+import Projets from "./components/Projets";
+import Quiz from "./components/Quiz";
+import Reglages from "./components/Reglages";
 
-const NAV = [
-  { id: 'dashboard', label: 'Tableau de bord', glyph: '01' },
-  { id: 'cours', label: 'Cours archivés', glyph: '02' },
-  { id: 'notes', label: 'Notes personnelles', glyph: '03' },
-  { id: 'projets', label: 'Projets', glyph: '04' },
-  { id: 'quiz', label: 'Quiz', glyph: '05' },
-  { id: 'reglages', label: 'Réglages', glyph: '06' },
-]
+const DEFAULT_SETTINGS = {
+  reminder_start: "21:00",
+  reminder_end: "00:00",
+  active_days: [1, 2, 3, 4, 5, 6, 7],
+  current_phase_id: 0,
+  day_in_program: 1,
+  objective: "",
+};
 
 export default function App() {
-  const [view, setView] = useState('dashboard')
-  const [settings, setSettings] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [toastMsg, setToastMsg] = useState('')
-  const [toastShow, setToastShow] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const { user, loading } = useAuth();
+  const [view, setView] = useState("dashboard");
+  const [settings, setSettings] = useState(null);
+  const [toastMsg, setToastMsg] = useState("");
 
-  const showToast = useCallback((msg) => {
-    setToastMsg(msg)
-    setToastShow(true)
-    setTimeout(() => setToastShow(false), 2400)
-  }, [])
+  const toast = useCallback((msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(""), 2400);
+  }, []);
 
-  const loadSettings = useCallback(async () => {
-    const { data, error } = await supabase.from('settings').select('*').eq('id', 1).single()
-    if (error) {
-      console.error(error)
-      showToast('Erreur de connexion à Supabase — vérifie ton .env')
+  const refreshSettings = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("settings").select("*").eq("user_id", user.id).maybeSingle();
+    if (data) {
+      setSettings(data);
     } else {
-      setSettings(data)
+      // Premier lancement : on crée la ligne de réglages par défaut.
+      const { data: created } = await supabase
+        .from("settings")
+        .insert({ user_id: user.id, ...DEFAULT_SETTINGS })
+        .select()
+        .single();
+      setSettings(created || DEFAULT_SETTINGS);
     }
-    setLoading(false)
-  }, [showToast])
+  }, [user]);
 
-  useEffect(() => { loadSettings() }, [loadSettings])
+  useEffect(() => {
+    if (user) refreshSettings();
+  }, [user, refreshSettings]);
 
-  const currentPhase = settings ? PHASES.find((p) => p.id === settings.current_phase_id) || PHASES[0] : PHASES[0]
+  if (loading) return <div style={{ padding: 40 }}>Chargement…</div>;
+  if (!user) return <Login />;
 
-  const handleViewChange = (nextView) => {
-    setView(nextView)
-    setMobileOpen(false)
-  }
+  const viewProps = { settings, refreshSettings, setView, toast };
 
   return (
     <div className="app">
-      <div className="rail-mobile-bar">
-        <div className="rail-brand">
-          <img className="brand-logo" src="/java%20logo.webp" alt="Logo Java" />
-          <span className="name">learn-Java from scratch</span>
-        </div>
-        <button
-          className="hamburger-btn"
-          aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-          aria-expanded={mobileOpen}
-          onClick={() => setMobileOpen((v) => !v)}
-        >
-          {mobileOpen ? '✕' : '☰'}
-        </button>
-      </div>
-
-      {mobileOpen && <div className="rail-overlay" onClick={() => setMobileOpen(false)} />}
-
-      <aside className={`rail ${mobileOpen ? 'mobile-open' : ''}`}>
-        <div className="rail-brand">
-          <img className="brand-logo" src="/java%20logo.webp" alt="Logo Java" />
-          <span className="name">learn-Java from scratch</span>
-        </div>
-        <div className="rail-status">
-          {loading ? 'chargement…' : settings ? `Phase ${settings.current_phase_id} · jour ${settings.day_in_program}` : 'hors ligne'}
-        </div>
-        <nav>
-          {NAV.map((n) => (
-            <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => handleViewChange(n.id)}>
-              <span className="glyph">{n.glyph}</span>{n.label}
-            </button>
-          ))}
-        </nav>
-        <div className="rail-foot">mentorat.java · v1</div>
-      </aside>
-
+      <Sidebar view={view} setView={setView} settings={settings} />
       <main>
-        {view === 'dashboard' && (
-          <Dashboard settings={settings} onSettingsChange={loadSettings} showToast={showToast} />
-        )}
-        {view === 'cours' && <Cours settings={settings} showToast={showToast} />}
-        {view === 'notes' && <Notes settings={settings} showToast={showToast} />}
-        {view === 'projets' && <Projets settings={settings} showToast={showToast} />}
-        {view === 'quiz' && <Quiz settings={settings} showToast={showToast} />}
-        {view === 'reglages' && <Reglages settings={settings} onSaved={loadSettings} showToast={showToast} />}
+        {view === "dashboard" && <Dashboard {...viewProps} />}
+        {view === "bibliotheque" && <Bibliotheque />}
+        {view === "cours" && <Cours {...viewProps} />}
+        {view === "notes" && <Notes {...viewProps} />}
+        {view === "projets" && <Projets {...viewProps} />}
+        {view === "quiz" && <Quiz {...viewProps} />}
+        {view === "reglages" && <Reglages {...viewProps} />}
       </main>
-
-      <div className={`toast ${toastShow ? 'show' : ''}`}>{toastMsg}</div>
+      <div className={"toast" + (toastMsg ? " show" : "")}>{toastMsg}</div>
     </div>
-  )
+  );
 }
-
-export { todayISO, fmtDateLong }
