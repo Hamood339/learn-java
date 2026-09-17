@@ -24,6 +24,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [toastMsg, setToastMsg] = useState('')
   const [toastShow, setToastShow] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const showToast = useCallback((msg) => {
     setToastMsg(msg)
@@ -46,19 +47,41 @@ export default function App() {
 
   const currentPhase = settings ? PHASES.find((p) => p.id === settings.current_phase_id) || PHASES[0] : PHASES[0]
 
+  const handleViewChange = (nextView) => {
+    setView(nextView)
+    setMobileOpen(false)
+  }
+
   return (
     <div className="app">
-      <aside className="rail">
+      <div className="rail-mobile-bar">
         <div className="rail-brand">
-          <span className="mark">// </span>
-          <span className="name">Carnet Java</span>
+          <img className="brand-logo" src="/java%20logo.webp" alt="Logo Java" />
+          <span className="name">learn-Java from scratch</span>
+        </div>
+        <button
+          className="hamburger-btn"
+          aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          {mobileOpen ? '✕' : '☰'}
+        </button>
+      </div>
+
+      {mobileOpen && <div className="rail-overlay" onClick={() => setMobileOpen(false)} />}
+
+      <aside className={`rail ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="rail-brand">
+          <img className="brand-logo" src="/java%20logo.webp" alt="Logo Java" />
+          <span className="name">learn-Java from scratch</span>
         </div>
         <div className="rail-status">
           {loading ? 'chargement…' : settings ? `Phase ${settings.current_phase_id} · jour ${settings.day_in_program}` : 'hors ligne'}
         </div>
         <nav>
           {NAV.map((n) => (
-            <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => setView(n.id)}>
+            <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => handleViewChange(n.id)}>
               <span className="glyph">{n.glyph}</span>{n.label}
             </button>
           ))}

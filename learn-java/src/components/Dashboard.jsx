@@ -68,6 +68,21 @@ export default function Dashboard({ settings, onSettingsChange, showToast }) {
     onSettingsChange()
   }
 
+  async function reopenSession() {
+    const { error } = await supabase.from('days').update({
+      statut: 'a_faire',
+      updated_at: new Date().toISOString(),
+    }).eq('date', today)
+
+    if (error) {
+      showToast('Erreur : ' + error.message)
+      return
+    }
+
+    showToast('Session réouverte : tu peux reprendre le cours')
+    loadToday()
+  }
+
   function downloadIcs() {
     const [h, m] = (settings.reminder_start || '21:00').split(':').map(Number)
     const days = settings.active_days && settings.active_days.length ? settings.active_days : [1,2,3,4,5,6]
@@ -131,7 +146,11 @@ export default function Dashboard({ settings, onSettingsChange, showToast }) {
               <p style={{ margin: 0 }}><strong>Phase {todayDoc.phase_id}</strong> — {phaseTitle(todayDoc.phase_id)}</p>
               <p className="muted" style={{ margin: 0 }}>Statut : {todayDoc.statut === 'fait' ? 'faite' : 'à faire'}</p>
               <div className="btn-row">
-                {todayDoc.statut !== 'fait' && <button className="btn amber" onClick={markDone}>Marquer comme faite</button>}
+                {todayDoc.statut !== 'fait' ? (
+                  <button className="btn amber" onClick={markDone}>Marquer comme faite</button>
+                ) : (
+                  <button className="btn ghost" onClick={reopenSession}>Revenir sur ce cours</button>
+                )}
               </div>
             </div>
           )}
