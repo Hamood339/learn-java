@@ -23,10 +23,7 @@ export default function Login() {
       <form onSubmit={handleSubmit} className="card login-card">
         <div className="login-brand">
           <img src="/java%20logo.webp" alt="Logo Learn-Java" />
-          <span>LEARN-JAVA</span>
         </div>
-        <h1>Prêt à progresser ?</h1>
-        <p className="login-intro">Retrouve ton parcours Java et continue ta session là où tu l’as laissée.</p>
         <div className="stack">
           <label className="field">
             Email
@@ -40,9 +37,6 @@ export default function Login() {
           <button className="btn primary" type="submit" disabled={loading}>
             {loading ? "Connexion…" : "Se connecter"}
           </button>
-          <p className="muted" style={{ marginTop: 4 }}>
-            Compte créé depuis le dashboard Supabase (Authentication → Users → Add user).
-          </p>
         </div>
       </form>
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { PHASES, DAY_LABELS } from '../lib/phases'
 
-export default function Reglages({ settings, onSaved, showToast }) {
+export default function Reglages({ settings, user, onSaved, showToast }) {
   const [reminderStart, setReminderStart] = useState('21:00')
   const [reminderEnd, setReminderEnd] = useState('23:59')
   const [activeDays, setActiveDays] = useState([1, 2, 3, 4, 5, 6])
@@ -33,7 +33,7 @@ export default function Reglages({ settings, onSaved, showToast }) {
       day_in_program: Number(dayInProgram) || 1,
       objective,
       updated_at: new Date().toISOString(),
-    }).eq('id', 1)
+    }).eq('user_id', user.id)
     if (error) { showToast('Erreur : ' + error.message); return }
     showToast('Réglages enregistrés')
     onSaved()
