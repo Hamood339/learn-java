@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { PHASES, phaseTitle } from '../lib/phases'
-import { todayISO, isoWeekday, fmtDateLong, reminderWindowStatus } from '../lib/helpers'
+import { useState } from 'react'
+import Pagination from './Pagination'
+import { PHASES } from '../lib/phases'
+import { todayISO, fmtDateLong } from '../lib/helpers'
 
 const DAILY_NOTIONS = [
   { title: 'String.equals()', text: 'Compare le contenu de deux chaînes avec equals(), jamais avec ==.', why: '== compare les références mémoire. equals() compare les caractères, ce qui correspond presque toujours à l’intention.', code: 'String a = new String("Java");\nString b = new String("Java");\nSystem.out.println(a.equals(b)); // true', result: 'Le résultat est true : les deux chaînes contiennent le même texte.' },
@@ -30,17 +30,8 @@ function DailyCode({ source }) {
   )
 }
 
-export default function Dashboard({ settings, user, onSettingsChange, showToast }) {
-  const [todayDoc, setTodayDoc] = useState(null)
-  const [loadingToday, setLoadingToday] = useState(true)
-
-  const loadToday = useCallback(async () => {
-    const { data } = await supabase.from('days').select('*').eq('date', todayISO()).maybeSingle()
-    setTodayDoc(data || null)
-    setLoadingToday(false)
-  }, [])
-
-  useEffect(() => { loadToday() }, [loadToday])
+export default function Dashboard({ settings }) {
+  const [page, setPage] = useState(0)
 
   if (!settings) {
     return (
@@ -51,124 +42,39 @@ export default function Dashboard({ settings, user, onSettingsChange, showToast 
     )
   }
 
-  const phase = PHASES.find((p) => p.id === settings.current_phase_id) || PHASES[0]
   const today = todayISO()
-  const wd = isoWeekday(today)
-  const isActiveDay = (settings.active_days || []).includes(wd)
-  const winStatus = reminderWindowStatus(settings.reminder_start, settings.reminder_end)
-  const doneToday = todayDoc && todayDoc.statut === 'fait'
-
-  let banner = null
-  if (!isActiveDay) {
-    banner = { kind: 'done', title: 'Jour de repos', text: "Aujourd'hui n'est pas un jour de session prévu." }
-  } else if (doneToday) {
-    banner = { kind: 'done', title: 'Session terminée', text: 'Bien joué — la session du jour est marquée comme faite.' }
-  } else if (winStatus === 'after') {
-    banner = { kind: 'late', title: 'Fenêtre de session passée', text: `La fenêtre ${settings.reminder_start}–${settings.reminder_end} est passée et la session n'est pas faite.` }
-  } else if (winStatus === 'in') {
-    banner = { kind: 'due', title: "C'est le moment", text: `Tu es dans la fenêtre de session (${settings.reminder_start}–${settings.reminder_end}).` }
-  } else {
-    banner = { kind: 'due', title: 'Session prévue ce soir', text: `Rendez-vous entre ${settings.reminder_start} et ${settings.reminder_end}.` }
-  }
-
-  async function startSession() {
-    const { error } = await supabase.from('days').upsert({
-      user_id: user.id,
-      date: today,
-      phase_id: settings.current_phase_id,
-      day_in_program: settings.day_in_program,
-      statut: 'a_faire',
-      note_contenu: '',
-      cours_contenu: '',
-      updated_at: new Date().toISOString(),
-    })
-    if (error) { showToast('Erreur : ' + error.message); return }
-    showToast('Session démarrée')
-    loadToday()
-  }
-
-  async function markDone() {
-    const { error: e1 } = await supabase.from('days').update({ statut: 'fait', updated_at: new Date().toISOString() }).eq('date', today)
-    const { error: e2 } = await supabase.from('settings').update({ day_in_program: (settings.day_in_program || 1) + 1 }).eq('user_id', user.id)
-    if (e1 || e2) { showToast('Erreur lors de la mise à jour'); return }
-    showToast('Session marquée comme faite')
-    loadToday()
-    onSettingsChange()
-  }
-
-  async function reopenSession() {
-    const { error } = await supabase.from('days').update({
-      statut: 'a_faire',
-      updated_at: new Date().toISOString(),
-    }).eq('date', today)
-
-    if (error) {
-      showToast('Erreur : ' + error.message)
-      return
-    }
-
-    showToast('Session réouverte : tu peux reprendre le cours')
-    loadToday()
-  }
-
   const dailyNotion = notionOfTheDay(today)
+  const pageSize = 6
+  const totalPages = Math.ceil(PHASES.length / pageSize)
+  const start = page * pageSize
+  const visiblePhases = PHASES.slice(start, start + pageSize)
 
   return (
     <section className="view">
       <div className="view-header">
         <div>
-          <h1>Jour {settings.day_in_program || 1} — {phase.title}</h1>
-          <div className="sub">{settings.objective ? 'Objectif en cours : ' + settings.objective : 'Phase ' + phase.id + ' du programme'}</div>
+          <h1>Tableau de bord</h1>
+          <div className="sub">Suivi du parcours Java</div>
         </div>
         <div className="date-tag">{fmtDateLong(today)}</div>
       </div>
 
-      <div className={`banner ${banner.kind}`}>
-        <span className="dot" />
-        <div className="txt"><strong>{banner.title}</strong>{banner.text}</div>
-      </div>
-
-      <div className="row-2">
-        <div className="card">
-          <h2 className="section-title">Session d'aujourd'hui</h2>
-          {loadingToday ? (
-            <p className="muted">Chargement…</p>
-          ) : !todayDoc ? (
-            <div className="stack">
-              <p className="muted" style={{ margin: 0 }}>Aucune session enregistrée pour aujourd'hui.</p>
-              <div className="btn-row"><button className="btn primary" onClick={startSession}>Commencer la session d'aujourd'hui</button></div>
-            </div>
-          ) : (
-            <div className="stack">
-              <p style={{ margin: 0 }}><strong>Phase {todayDoc.phase_id}</strong> — {phaseTitle(todayDoc.phase_id)}</p>
-              <p className="muted" style={{ margin: 0 }}>Statut : {todayDoc.statut === 'fait' ? 'faite' : 'à faire'}</p>
-              <div className="btn-row">
-                {todayDoc.statut !== 'fait' ? (
-                  <button className="btn amber" onClick={markDone}>Marquer comme faite</button>
-                ) : (
-                  <button className="btn ghost" onClick={reopenSession}>Revenir sur ce cours</button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="card">
-          <h2 className="section-title">Notion du jour</h2>
-          <div className="daily-notion">
-            <span className="daily-kicker">À retenir en Java</span>
-            <strong>{dailyNotion.title}</strong>
-            <p>{dailyNotion.text}</p>
-            <div className="notion-detail"><b>Pourquoi c’est important</b><span>{dailyNotion.why}</span></div>
-            <DailyCode source={dailyNotion.code} />
-            <div className="notion-result"><b>À observer</b><span>{dailyNotion.result}</span></div>
-          </div>
+      <div className="card">
+        <h2 className="section-title">Notion du jour</h2>
+        <div className="daily-notion">
+          <span className="daily-kicker">À retenir en Java</span>
+          <strong>{dailyNotion.title}</strong>
+          <p>{dailyNotion.text}</p>
+          <div className="notion-detail"><b>Pourquoi c’est important</b><span>{dailyNotion.why}</span></div>
+          <DailyCode source={dailyNotion.code} />
+          <div className="notion-result"><b>À observer</b><span>{dailyNotion.result}</span></div>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2 className="section-title">Progression du programme</h2>
         <div className="timeline">
-          {PHASES.map((p) => {
+          {visiblePhases.map((p) => {
             const cls = p.id < settings.current_phase_id ? 'done' : p.id === settings.current_phase_id ? 'current' : ''
             const label = p.id < settings.current_phase_id ? 'fait' : p.id === settings.current_phase_id ? 'en cours' : 'à venir'
             return (
@@ -179,6 +85,15 @@ export default function Dashboard({ settings, user, onSettingsChange, showToast 
               </div>
             )
           })}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Pagination
+            page={page}
+            hasNext={page < totalPages - 1}
+            onPrevious={() => setPage((current) => Math.max(0, current - 1))}
+            onNext={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+            label="phases"
+          />
         </div>
       </div>
     </section>

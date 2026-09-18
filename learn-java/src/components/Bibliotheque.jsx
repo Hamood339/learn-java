@@ -10,6 +10,8 @@ export default function Bibliotheque() {
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [showEditActions, setShowEditActions] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -31,6 +33,22 @@ export default function Bibliotheque() {
     setDraft(refs[phaseId] || "");
     setMessage("");
   }
+
+  function goToPhase(phaseId) {
+    selectPhase(phaseId);
+    setShowEditActions(false);
+    setShowEditor(false);
+  }
+
+  function toggleEditor() {
+    setShowEditActions((value) => !value);
+    setShowEditor((value) => !value);
+  }
+
+  const currentPhase = PHASES.find((phase) => phase.id === editingPhase) || PHASES[0];
+  const currentIndex = PHASES.findIndex((phase) => phase.id === editingPhase);
+  const previousPhase = currentIndex > 0 ? PHASES[currentIndex - 1] : null;
+  const nextPhase = currentIndex < PHASES.length - 1 ? PHASES[currentIndex + 1] : null;
 
   async function saveContent(event) {
     event.preventDefault();
@@ -63,35 +81,38 @@ export default function Bibliotheque() {
         </div>
       </div>
 
-      <form className="card library-editor" onSubmit={saveContent}>
-        <div className="editor-heading">
-          <div>
-            <h2 className="section-title">Ajouter du contenu</h2>
-            <p className="muted">Structure tes notes, ajoute des exemples Java et conserve tout dans Supabase.</p>
+      {showEditor && (
+        <form className="card library-editor" onSubmit={saveContent}>
+          <div className="editor-heading">
+            <div>
+              <h2 className="section-title">Ajouter du contenu</h2>
+              <p className="muted">Structure tes notes, ajoute des exemples Java et conserve tout dans Supabase.</p>
+            </div>
+            {message && <span className="save-status">{message}</span>}
           </div>
-          {message && <span className="save-status">{message}</span>}
-        </div>
-        <label className="field">
-          Phase concernée
-          <select value={editingPhase} onChange={(event) => selectPhase(Number(event.target.value))}>
-            {PHASES.map((phase) => <option value={phase.id} key={phase.id}>Phase {phase.id} — {phase.title}</option>)}
-          </select>
-        </label>
-        <label className="field">
-          Contenu de la fiche
-          <textarea
-            className="library-textarea"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={'## Les tableaux\n\nExplique le concept ici.\n\n```java\nint[] nombres = {1, 2, 3};\nSystem.out.println(nombres[0]);\n```\n\n## Exemple\n- Un point important'}
-            rows={14}
-          />
-        </label>
-        <div className="editor-footer">
-          <span className="editor-hint">Titres avec ##, listes avec -, code avec ```java</span>
-          <button className="btn primary" type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer la fiche"}</button>
-        </div>
-      </form>
+
+          <label className="field">
+            Phase concernée
+            <select value={editingPhase} onChange={(event) => selectPhase(Number(event.target.value))}>
+              {PHASES.map((phase) => <option value={phase.id} key={phase.id}>Phase {phase.id} — {phase.title}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            Contenu de la fiche
+            <textarea
+              className="library-textarea"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={'## Les tableaux\n\nExplique le concept ici.\n\n```java\nint[] nombres = {1, 2, 3};\nSystem.out.println(nombres[0]);\n```\n\n## Exemple\n- Un point important'}
+              rows={14}
+            />
+          </label>
+          <div className="editor-footer">
+            <span className="editor-hint">Titres avec ##, listes avec -, code avec ```java</span>
+            <button className="btn primary" type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer la fiche"}</button>
+          </div>
+        </form>
+      )}
 
       {loading ? (
         <p className="muted">Chargement…</p>
@@ -100,19 +121,42 @@ export default function Bibliotheque() {
           Bibliothèque vide — exécute <code>supabase/seed_phase_reference.sql</code> dans l'éditeur SQL Supabase.
         </p></div>
       ) : (
-        PHASES.map((p) => (
-          <details className="card lib-entry" key={p.id}>
-            <summary>
-              <span className="lib-num">{String(p.id).padStart(2, "0")}</span>
-              <span className="lib-title">{p.title}</span>
-            </summary>
-            {refs[p.id] ? (
-              <div className="body" dangerouslySetInnerHTML={{ __html: mdLite(refs[p.id]) }} />
-            ) : (
-              <p className="empty-note">Pas encore de contenu pour cette phase.</p>
+        <div className="card lib-entry" style={{ padding: 18 }}>
+          <div className="editor-heading" style={{ marginBottom: 12 }}>
+            <div>
+              <span className="lib-num">{String(currentPhase.id).padStart(2, "0")}</span>
+              <span className="lib-title" style={{ marginLeft: 10 }}>{currentPhase.title}</span>
+            </div>
+            <button
+              type="button"
+              className="btn ghost"
+              aria-label={`Modifier la phase ${currentPhase.title}`}
+              onClick={toggleEditor}
+              title="Modifier"
+            >
+              ✎
+            </button>
+          </div>
+
+          {refs[currentPhase.id] ? (
+            <div className="body" dangerouslySetInnerHTML={{ __html: mdLite(refs[currentPhase.id]) }} />
+          ) : (
+            <p className="empty-note">Pas encore de contenu pour cette phase.</p>
+          )}
+
+          <div className="btn-row" style={{ marginTop: 18, justifyContent: previousPhase ? "space-between" : "flex-end" }}>
+            {previousPhase ? (
+              <button type="button" className="btn ghost" onClick={() => goToPhase(previousPhase.id)}>
+                ← Précédente
+              </button>
+            ) : <span />}
+            {nextPhase && (
+              <button type="button" className="btn ghost" onClick={() => goToPhase(nextPhase.id)}>
+                Suivante →
+              </button>
             )}
-          </details>
-        ))
+          </div>
+        </div>
       )}
     </section>
   );

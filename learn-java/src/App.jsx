@@ -5,10 +5,6 @@ import Login from "./components/Login";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import Bibliotheque from "./components/Bibliotheque";
-import Cours from "./components/Cours";
-import Notes from "./components/Notes";
-import Projets from "./components/Projets";
-import Quiz from "./components/Quiz";
 import Reglages from "./components/Reglages";
 
 const DEFAULT_SETTINGS = {
@@ -71,10 +67,6 @@ export default function App() {
       <main>
         {view === "dashboard" && <Dashboard {...viewProps} />}
         {view === "bibliotheque" && <Bibliotheque />}
-        {view === "cours" && <Cours {...viewProps} />}
-        {view === "notes" && <Notes {...viewProps} />}
-        {view === "projets" && <Projets {...viewProps} />}
-        {view === "quiz" && <Quiz {...viewProps} />}
         {view === "reglages" && <Reglages {...viewProps} />}
       </main>
       <div className={"toast" + (toastMsg ? " show" : "")}>{toastMsg}</div>
