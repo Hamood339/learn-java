@@ -22,8 +22,10 @@ export default function Login() {
       <div className="login-orbit" aria-hidden="true" />
       <form onSubmit={handleSubmit} className="card login-card">
         <div className="login-brand">
-          <img src="/java%20logo.webp" alt="Logo Learn-Java" />
+          <img src="/logoapp.png" alt="Logo CodeLearn" />
         </div>
+        <h1>CodeLearn</h1>
+        <p className="login-intro">Apprends • Pratique • Progresse</p>
         <div className="stack">
           <label className="field">
             Email

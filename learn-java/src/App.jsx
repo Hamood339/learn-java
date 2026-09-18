@@ -19,12 +19,31 @@ const DEFAULT_SETTINGS = {
 export default function App() {
   const { user, loading } = useAuth();
   const [view, setView] = useState("dashboard");
+  const [viewHistory, setViewHistory] = useState([]);
   const [settings, setSettings] = useState(null);
   const [toastMsg, setToastMsg] = useState("");
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 2400);
+  }, []);
+
+  const navigateToView = useCallback((nextView) => {
+    setView((currentView) => {
+      if (currentView !== nextView) {
+        setViewHistory((history) => [...history, currentView]);
+      }
+      return nextView;
+    });
+  }, []);
+
+  const goBackToPreviousView = useCallback(() => {
+    setViewHistory((history) => {
+      if (!history.length) return history;
+      const previousView = history[history.length - 1];
+      setView(previousView);
+      return history.slice(0, -1);
+    });
   }, []);
 
   const refreshSettings = useCallback(async () => {
@@ -63,8 +82,16 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar view={view} setView={setView} settings={settings} />
+      <Sidebar view={view} setView={navigateToView} settings={settings} />
       <main>
+        {viewHistory.length > 0 && (
+          <div className="view-back-bar">
+            <button type="button" className="btn ghost" onClick={goBackToPreviousView}>
+              ← Retour
+            </button>
+          </div>
+        )}
+
         {view === "dashboard" && <Dashboard {...viewProps} />}
         {view === "bibliotheque" && <Bibliotheque />}
         {view === "reglages" && <Reglages {...viewProps} />}
