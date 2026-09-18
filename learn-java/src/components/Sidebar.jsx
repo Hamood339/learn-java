@@ -1,16 +1,70 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import {
+  IconArchive,
+  IconBook,
+  IconClose,
+  IconDashboard,
+  IconFolder,
+  IconGear,
+  IconMenu,
+  IconMoon,
+  IconNote,
+  IconQuiz,
+  IconSun,
+} from "./icons";
 
 const ITEMS = [
-  { view: "dashboard", glyph: "01", label: "Tableau de bord" },
-  { view: "bibliotheque", glyph: "02", label: "Bibliothèque" },
-  { view: "reglages", glyph: "03", label: "Réglages" },
+  { view: "dashboard", label: "Tableau de bord", Icon: IconDashboard },
+  { view: "bibliotheque", label: "Bibliothèque", Icon: IconBook },
+  { view: "cours", label: "Cours archivés", Icon: IconArchive },
+  { view: "notes", label: "Notes", Icon: IconNote },
+  { view: "projets", label: "Projets", Icon: IconFolder },
+  { view: "quiz", label: "Quiz", Icon: IconQuiz },
+  { view: "reglages", label: "Réglages", Icon: IconGear },
 ];
+
+const THEME_KEY = "codelearn-theme";
+
+function getInitialTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) || "system";
+  } catch {
+    return "system";
+  }
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "dark" || theme === "light") root.dataset.theme = theme;
+  else delete root.dataset.theme;
+}
 
 export default function Sidebar({ view, setView, settings }) {
   const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState(getInitialTheme);
   const statusLabel = settings ? "Programme Java" : "…";
+
+  useEffect(() => {
+    applyTheme(theme);
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // stockage indisponible (mode privé) : préférence simplement non persistée
+    }
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((current) => {
+      if (current === "dark") return "light";
+      if (current === "light") return "dark";
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+      return prefersDark ? "light" : "dark";
+    });
+  }
+
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
 
   function choose(v) {
     setView(v);
@@ -31,7 +85,7 @@ export default function Sidebar({ view, setView, settings }) {
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? "✕" : "☰"}
+          {open ? <IconClose width={20} height={20} /> : <IconMenu width={20} height={20} />}
         </button>
       </div>
 
@@ -44,28 +98,24 @@ export default function Sidebar({ view, setView, settings }) {
         </div>
         <div className="rail-status">{statusLabel}</div>
         <nav>
-          {ITEMS.map((it) => (
-            <button
-              key={it.view}
-              className={view === it.view ? "active" : ""}
-              onClick={() => choose(it.view)}
-            >
-              <span className="glyph">{it.glyph}</span>
-              {it.label}
+          {ITEMS.map(({ view: v, label, Icon }) => (
+            <button key={v} className={view === v ? "active" : ""} onClick={() => choose(v)}>
+              <span className="glyph"><Icon width={16} height={16} /></span>
+              {label}
             </button>
           ))}
         </nav>
         <div className="rail-foot">
           <button
-            onClick={signOut}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              color: "rgba(238,246,240,0.55)",
-              fontSize: 11.5,
-              textDecoration: "underline",
-            }}
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={isDark ? "Passer en thème clair" : "Passer en thème sombre"}
           >
+            {isDark ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
+            <span>{isDark ? "Thème clair" : "Thème sombre"}</span>
+          </button>
+          <button type="button" className="signout-link" onClick={signOut}>
             Se déconnecter
           </button>
         </div>

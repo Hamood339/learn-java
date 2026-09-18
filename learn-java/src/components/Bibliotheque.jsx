@@ -231,34 +231,22 @@ export default function Bibliotheque() {
             </div>
           </div>
 
-          <div className="library-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 16 }}>
+          <div className="library-grid">
             {rubriques.map((rubrique) => (
               <button
                 key={rubrique.id}
                 type="button"
-                className="card"
+                className={"card library-card" + (currentRubriqueId === rubrique.id ? " active" : "")}
                 onClick={() => openCard(rubrique.id)}
-                style={{
-                  textAlign: "left",
-                  padding: 18,
-                  cursor: "pointer",
-                  background: currentRubriqueId === rubrique.id ? "rgba(107, 130, 255, 0.08)" : undefined,
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ fontSize: 11, color: "var(--muted, #5b6475)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {rubrique.type}
-                  </div>
+                <div className="library-card-head">
+                  <div className="library-card-type">{rubrique.type}</div>
                   {rubrique.logo && (
-                    <img
-                      src={rubrique.logo}
-                      alt={rubrique.label}
-                      style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, background: "rgba(255,255,255,0.08)" }}
-                    />
+                    <img className="library-card-logo" src={rubrique.logo} alt={rubrique.label} />
                   )}
                 </div>
-                <h3 style={{ margin: "10px 0 8px", fontSize: 22 }}>{rubrique.label}</h3>
-                <p style={{ margin: 0, color: "var(--ink-soft, #4a5568)" }}>{rubrique.description}</p>
+                <h3 className="library-card-title">{rubrique.label}</h3>
+                <p className="library-card-desc">{rubrique.description}</p>
               </button>
             ))}
           </div>

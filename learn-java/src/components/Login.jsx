@@ -35,7 +35,12 @@ export default function Login() {
             Mot de passe
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
-          {error && <p style={{ color: "var(--rust)", fontSize: 13, margin: 0 }}>{error}</p>}
+          {error && (
+            <div className="banner late compact">
+              <span className="dot" />
+              <span className="txt">{error}</span>
+            </div>
+          )}
           <button className="btn primary" type="submit" disabled={loading}>
             {loading ? "Connexion…" : "Se connecter"}
           </button>

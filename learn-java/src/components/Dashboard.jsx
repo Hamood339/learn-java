@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Pagination from './Pagination'
-import { PHASES } from '../lib/phases'
+import { PHASES, phaseTitle } from '../lib/phases'
 import { todayISO, fmtDateLong } from '../lib/helpers'
+import { supabase } from '../lib/supabase'
+import { IconFlame } from './icons'
 
 const DAILY_NOTIONS = [
   { title: 'String.equals()', text: 'Compare le contenu de deux chaînes avec equals(), jamais avec ==.', why: '== compare les références mémoire. equals() compare les caractères, ce qui correspond presque toujours à l’intention.', code: 'String a = new String("Java");\nString b = new String("Java");\nSystem.out.println(a.equals(b)); // true', result: 'Le résultat est true : les deux chaînes contiennent le même texte.' },
@@ -21,6 +23,56 @@ function notionOfTheDay(isoDate) {
   return DAILY_NOTIONS[dayNumber % DAILY_NOTIONS.length]
 }
 
+function isoDaysAgo(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+
+function computeStreak(dateSet) {
+  const startOffset = dateSet.has(isoDaysAgo(0)) ? 0 : 1
+  if (startOffset === 1 && !dateSet.has(isoDaysAgo(1))) return 0
+  let streak = 0
+  let offset = startOffset
+  while (dateSet.has(isoDaysAgo(offset))) {
+    streak++
+    offset++
+  }
+  return streak
+}
+
+function ProgressRing({ percent }) {
+  const size = 108
+  const stroke = 10
+  const radius = (size - stroke) / 2
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (percent / 100) * circumference
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="progress-ring">
+      <defs>
+        <linearGradient id="progress-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="var(--violet-600)" />
+          <stop offset="100%" stopColor="var(--blue-600)" />
+        </linearGradient>
+      </defs>
+      <circle cx={size / 2} cy={size / 2} r={radius} className="progress-ring-track" strokeWidth={stroke} fill="none" />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        className="progress-ring-value"
+        strokeWidth={stroke}
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" className="progress-ring-text">{percent}%</text>
+    </svg>
+  )
+}
+
 function DailyCode({ source }) {
   return (
     <div className="code-editor notion-code">
@@ -30,14 +82,41 @@ function DailyCode({ source }) {
   )
 }
 
-export default function Dashboard({ settings }) {
+export default function Dashboard({ settings, user }) {
   const [page, setPage] = useState(0)
+  const [streak, setStreak] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    supabase
+      .from('days')
+      .select('date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(60)
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return
+        setStreak(computeStreak(new Set(data.map((d) => d.date))))
+      })
+    return () => { cancelled = true }
+  }, [user])
 
   if (!settings) {
     return (
       <section className="view">
         <div className="view-header"><div><h1>Tableau de bord</h1></div></div>
-        <p className="muted">Connexion à Supabase en cours, ou configuration manquante (vérifie ton fichier .env).</p>
+        <div className="card">
+          <span className="skeleton skeleton-line" style={{ width: '35%' }} />
+          <span className="skeleton skeleton-block" />
+        </div>
+        <div className="card" style={{ marginTop: 16 }}>
+          <span className="skeleton skeleton-line" style={{ width: '28%' }} />
+          <span className="skeleton skeleton-line" />
+          <span className="skeleton skeleton-line" />
+          <span className="skeleton skeleton-line" style={{ width: '60%' }} />
+        </div>
+        <p className="muted" style={{ marginTop: 16 }}>Connexion à Supabase en cours…</p>
       </section>
     )
   }
@@ -48,6 +127,8 @@ export default function Dashboard({ settings }) {
   const totalPages = Math.ceil(PHASES.length / pageSize)
   const start = page * pageSize
   const visiblePhases = PHASES.slice(start, start + pageSize)
+  const progressPercent = Math.max(0, Math.min(100, Math.round((settings.current_phase_id / (PHASES.length - 1)) * 100)))
+  const currentPhaseTitle = phaseTitle(settings.current_phase_id)
 
   return (
     <section className="view">
@@ -60,6 +141,27 @@ export default function Dashboard({ settings }) {
       </div>
 
       <div className="card">
+        <h2 className="section-title">Progression globale</h2>
+        <div className="progress-overview">
+          <ProgressRing percent={progressPercent} />
+          <div className="progress-stats">
+            <div className="progress-stat">
+              <span className="progress-stat-value">Phase {settings.current_phase_id}/{PHASES.length - 1}</span>
+              <span className="progress-stat-label">{currentPhaseTitle}</span>
+            </div>
+            <div className="progress-stat">
+              <span className="progress-stat-value">Jour {settings.day_in_program}</span>
+              <span className="progress-stat-label">du programme</span>
+            </div>
+            <div className="progress-stat">
+              <span className="progress-stat-value streak-value"><IconFlame width={16} height={16} /> {streak}</span>
+              <span className="progress-stat-label">{streak > 1 ? 'jours de suite' : 'jour de suite'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
         <h2 className="section-title">Notion du jour</h2>
         <div className="daily-notion">
           <span className="daily-kicker">À retenir en Java</span>
